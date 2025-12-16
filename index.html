@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>ㅤ</title>
+
 <style>
 body {
     margin: 0;
@@ -144,6 +145,22 @@ body {
     background-color: #333;
 }
 
+/* ================= PANIC BUTTON ================= */
+#panicBtn {
+    background-color: #8b0000;
+    color: #fff;
+    border: 2px solid #550000;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#panicBtn:hover {
+    background-color: #a00000;
+}
+
 /* ================= SIDEBAR SCROLLBAR ================= */
 #gameList {
     flex-grow: 1;
@@ -158,22 +175,11 @@ body {
 
 #gameList::-webkit-scrollbar-track {
     background: #181818;
-    border-radius: 4px;
 }
 
 #gameList::-webkit-scrollbar-thumb {
     background-color: #00ff99;
     border-radius: 4px;
-    border: 2px solid #181818;
-}
-
-#gameList::-webkit-scrollbar-thumb:hover {
-    background-color: #00cc77;
-}
-
-#gameList {
-    scrollbar-width: thin;
-    scrollbar-color: #00ff99 #181818;
 }
 
 /* ================= CONTENT ================= */
@@ -201,9 +207,7 @@ iframe {
     box-shadow: 0 0 15px rgba(0, 255, 153, 0.5);
     opacity: 0;
     transform: translateY(20px);
-    pointer-events: auto;
-    cursor: pointer;
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    transition: 0.5s;
     z-index: 10000;
 }
 
@@ -221,7 +225,7 @@ iframe {
     <div id="lockBox">
         <h2>Enter Password</h2>
         <input type="password" id="passwordInput" placeholder="Password">
-        <button type="button" onclick="checkPassword()">Unlock</button>
+        <button onclick="checkPassword()">Unlock</button>
         <p id="errorMsg"></p>
     </div>
 </div>
@@ -232,8 +236,9 @@ iframe {
 
     <input type="text" id="searchBar" placeholder="Search games...">
 
-    <button id="fullscreenBtn" type="button">Fullscreen</button>
-    <button id="lockBtn" type="button" onclick="lockAgain()">Lock</button>
+    <button id="fullscreenBtn">Fullscreen</button>
+    <button id="lockBtn" onclick="lockAgain()">Lock</button>
+    <button id="panicBtn">Panic</button>
 
     <div id="gameList">
   <!-- A -->
@@ -375,90 +380,74 @@ iframe {
     <iframe id="gameFrame" allowfullscreen></iframe>
 </div>
 
-<!-- ================= POPUP ================= -->
-<div id="popup" class="popup">Hey there! There are about 124 games and more to be added. Some of them dont work, this is still a work in progress. If you have any game recommendations, feedback, or questions please click <a
-        href="https://forms.gle/hPfJyrswe7K3LmbT9"
-        class="form"
-        target="_blank"
-        >here.</a> </div>
+<div id="popup" class="popup">
+Hey there! There are about 124 games and more to be added.
+</div>
 
 <script>
 /* ============ PASSWORD ============ */
 const PASSWORD = "j0hn6789";
 
 function checkPassword() {
-    const input = document.getElementById("passwordInput").value;
-    const error = document.getElementById("errorMsg");
-
+    const input = passwordInput.value;
     if (input === PASSWORD) {
-        document.getElementById("lockScreen").style.display = "none";
-        error.textContent = "";
-        document.getElementById("passwordInput").value = "";
-
-        // Show popup
-        const popup = document.getElementById("popup");
+        lockScreen.style.display = "none";
+        passwordInput.value = "";
         popup.classList.add("show");
-
-        // Hide popup after 3 seconds
-        const timeout = setTimeout(() => {
-            popup.classList.remove("show");
-        }, 10000);
-
-        // Allow manual dismissal on click
-        popup.addEventListener("click", () => {
-            popup.classList.remove("show");
-            clearTimeout(timeout);
-        }, { once: true });
-
+        setTimeout(() => popup.classList.remove("show"), 10000);
     } else {
-        error.textContent = "Email me at marcelm7344@gmail.com for any questions. Wrong password!";
+        errorMsg.textContent = "Wrong password!";
     }
 }
 
 function lockAgain() {
-    document.getElementById("lockScreen").style.display = "flex";
+    lockScreen.style.display = "flex";
 }
 
 /* ============ GAME LOADER ============ */
 function loadGame(gameFile, element) {
-    const frame = document.getElementById("gameFrame");
-    frame.src = gameFile;
-
-    document.querySelectorAll(".game-link").forEach(game =>
-        game.classList.remove("active")
-    );
-
+    gameFrame.src = gameFile;
+    document.querySelectorAll(".game-link").forEach(g => g.classList.remove("active"));
     if (element) element.classList.add("active");
-
-    // Save last game
     localStorage.setItem("activeGame", gameFile);
 }
 
-/* Restore last game on load */
+/* Restore last game */
 window.addEventListener("load", () => {
-    const lastGame = localStorage.getItem("activeGame");
-    if (!lastGame) return;
-
-    const gameElement = document.querySelector(`.game-link[onclick*="${lastGame}"]`);
-    if (gameElement) loadGame(lastGame, gameElement);
+    const last = localStorage.getItem("activeGame");
+    if (!last) return;
+    const el = document.querySelector(`.game-link[onclick*="${last}"]`);
+    if (el) loadGame(last, el);
 });
 
-/* Live search */
-document.getElementById("searchBar").addEventListener("input", function () {
-    const filter = this.value.toLowerCase();
-    document.querySelectorAll(".game-link").forEach(game => {
-        game.style.display = game.textContent.toLowerCase().includes(filter) ? "block" : "none";
-    });
-    document.getElementById("gameList").scrollTop = 0;
+/* Search */
+searchBar.addEventListener("input", function () {
+    const f = this.value.toLowerCase();
+    document.querySelectorAll(".game-link").forEach(g =>
+        g.style.display = g.textContent.toLowerCase().includes(f) ? "block" : "none"
+    );
 });
 
 /* Fullscreen */
-document.getElementById("fullscreenBtn").addEventListener("click", () => {
-    const frame = document.getElementById("gameFrame");
-    if (frame.requestFullscreen) frame.requestFullscreen();
+fullscreenBtn.onclick = () => gameFrame.requestFullscreen();
+
+/* ============ PANIC MODE ============ */
+const PANIC_URL = "https://classroom.google.com";
+
+function panic() {
+    gameFrame.src = "about:blank";
+    document.title = "Google Classroom";
+    window.location.replace(PANIC_URL);
+}
+
+panicBtn.onclick = panic;
+
+document.addEventListener("keydown", e => {
+    if (e.key.toLowerCase() === "p") panic();
 });
 </script>
 
 </body>
 </html>
+
 
